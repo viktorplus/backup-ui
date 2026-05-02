@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Планы backup</h1>
+<div class="actions"><a class="button" href="/plans/new">Создать план из анализа сервера</a></div>
+<table class="table">
+  <tr><th>Имя</th><th>Корень backup</th><th>Хранилища</th><th>Retention</th><th>Действия</th></tr>
+  {% for plan in plans %}
+  <tr>
+    <td>{{ plan.name }}</td>
+    <td><code>{{ plan.backup_root }}</code></td>
+    <td>{{ plan.storage | length }}</td>
+    <td>последних: {{ plan.retention.keep_last or 0 }}, лимит GB: {{ plan.retention.max_total_gb or 0 }}</td>
+    <td class="actions">
+      <a class="button secondary" href="/plans/{{ plan.id }}/edit">Изменить</a>
+      <form method="post" action="/plans/{{ plan.id }}/run"><button>Запустить</button></form>
+      <form method="post" action="/plans/{{ plan.id }}/delete"><button class="danger">Удалить</button></form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">Планов пока нет.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
+

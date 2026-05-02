@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Файлы</h1>
+<p class="help">Read-only просмотр директории хоста. Файлы не открываются и не изменяются.</p>
+
+<form method="get" class="inline-form">
+  <label>Директория</label>
+  <input type="text" name="path" value="{{ listing.display_path }}">
+  <button>Открыть</button>
+</form>
+
+<div class="actions gap-top">
+  <a class="button secondary" href="/server/files?path={{ listing.parent | urlencode }}">Вверх</a>
+  <a class="button secondary" href="/server/files?path=/opt">/opt</a>
+  <a class="button secondary" href="/server/files?path=/etc">/etc</a>
+  <a class="button secondary" href="/server/files?path=/opt/backups">/opt/backups</a>
+</div>
+
+{% if listing.error %}
+<p class="danger">Ошибка чтения: {{ listing.error }}</p>
+{% endif %}
+
+<p class="help">Путь контейнера: <code>{{ listing.real_path }}</code>{% if listing.truncated %}. Показаны первые 500 элементов.{% endif %}</p>
+
+<table class="table">
+  <tr><th>Имя</th><th>Тип</th><th>Размер</th><th>Изменен</th><th>Права</th></tr>
+  {% for item in listing["items"] %}
+  <tr>
+    <td>
+      {% if item.can_open %}
+        <a href="/server/files?path={{ item.path | urlencode }}">{{ item.name }}</a>
+      {% else %}
+        {{ item.name }}
+      {% endif %}
+    </td>
+    <td>{{ item.kind }}</td>
+    <td>{{ item.size }}</td>
+    <td>{{ item.mtime }}</td>
+    <td><code>{{ item.mode }}</code></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">Директория пуста или недоступна.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

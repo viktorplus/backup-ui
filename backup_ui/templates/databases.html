@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Базы данных</h1>
+<p class="help">Read-only просмотр контейнеров с базами. UI показывает базы и таблицы, но не читает строки таблиц.</p>
+
+{% for container in containers %}
+<section class="panel gap-top">
+  <h2>{{ container.name }} <span class="badge">{{ container.engine }}</span></h2>
+  <p class="help">Image: <code>{{ container.image }}</code>. Status: {{ container.status }}</p>
+  <table class="table">
+    <tr><th>База</th><th>Размер</th><th>Действие</th><th>Комментарий</th></tr>
+    {% for db in container.databases %}
+    <tr>
+      <td>{{ db.name }}</td>
+      <td>{{ db.size }}</td>
+      <td>
+        {% if not db.error and db.name != "ошибка доступа" %}
+        <a class="button secondary" href="/databases/detail?container={{ container.name | urlencode }}&engine={{ container.engine | urlencode }}&database={{ db.name | urlencode }}">Таблицы</a>
+        {% endif %}
+      </td>
+      <td class="muted">{{ db.error }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">Базы не найдены или контейнер недоступен.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% else %}
+<section class="panel"><p class="muted">Контейнеры PostgreSQL/MySQL/MariaDB не найдены.</p></section>
+{% endfor %}
+{% endblock %}

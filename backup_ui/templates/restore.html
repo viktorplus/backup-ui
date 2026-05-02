@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Восстановление</h1>
+<section class="panel">
+  <p class="help">Восстановление запускается только после ввода слова подтверждения <strong>ВОССТАНОВИТЬ</strong>. Перед восстановлением остановите сервис проекта и сделайте safety backup.</p>
+  <form method="post" action="/restore">
+    <label>Snapshot</label>
+    <select name="snapshot">
+      {% for snap in snapshots %}
+      <option value="{{ snap }}">{{ snap.name }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Компонент внутри snapshot</label>
+    <input type="text" name="component" placeholder="например: planer">
+
+    <label>Что восстановить</label>
+    <select name="mode">
+      <option value="files">Файлы проекта</option>
+      <option value="database">Базу PostgreSQL</option>
+    </select>
+
+    <label>Цель восстановления</label>
+    <input type="text" name="target" placeholder="для файлов: /tmp/restore-check; для базы: postgres-container:database:user">
+
+    <label>Подтверждение</label>
+    <input type="text" name="confirmation" placeholder="ВОССТАНОВИТЬ">
+
+    <div class="actions"><button class="danger">Запустить восстановление</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Анализ сервера</h1>
+<p class="help">Система показывает найденные проекты, базы и конфиги. Это только анализ, backup не запускается.</p>
+
+<section class="panel">
+  <h2>Проекты</h2>
+  <table class="table">
+    <tr><th>Имя</th><th>Путь</th><th>Тип</th><th>Рекомендация</th><th>Комментарий</th></tr>
+    {% for item in data["projects"] %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td><code>{{ item.path }}</code></td>
+      <td>{{ item.kind }}</td>
+      <td>{{ "включить" if item.recommended else "проверить вручную" }}</td>
+      <td>{{ item.comment }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Базы PostgreSQL</h2>
+  <table class="table">
+    <tr><th>Контейнер</th><th>База</th><th>Размер</th><th>Рекомендация</th><th>Комментарий</th></tr>
+    {% for db in data["databases"] %}
+    <tr>
+      <td>{{ db.container }}</td>
+      <td>{{ db.name }}</td>
+      <td>{{ db.size_human }}</td>
+      <td>{{ "включить" if db.recommended else "отдельный план" }}</td>
+      <td>{{ db.comment }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">PostgreSQL базы не найдены или нет доступа к контейнеру.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Конфигурационные файлы</h2>
+  <table class="table">
+    <tr><th>Имя</th><th>Путь</th><th>Рекомендация</th></tr>
+    {% for cfg in data["configs"] %}
+    <tr><td>{{ cfg.name }}</td><td><code>{{ cfg.path }}</code></td><td>{{ "включить" if cfg.recommended else "по необходимости" }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

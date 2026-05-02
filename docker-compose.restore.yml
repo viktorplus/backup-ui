@@ -1,0 +1,8 @@
+# Включать только на время восстановления файлов на хост.
+# Базовый compose монтирует /opt и /etc read-only.
+services:
+  backup-ui:
+    volumes:
+      - /opt:/host/opt:rw
+      - /etc:/host/etc:rw
+

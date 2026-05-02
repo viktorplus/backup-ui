@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "backup-ui"
+version = "0.1.0"
+description = "Веб-интерфейс управления резервным копированием Linux/Docker серверов"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "jinja2>=3.1",
+  "python-multipart>=0.0.9",
+]
+
+[project.scripts]
+backup-ui = "backup_ui.app:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backup_ui*"]
+

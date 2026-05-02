@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Созданные копии</h1>
+<section class="panel">
+  <p class="help">Копии не затирают друг друга. `latest` только указывает на последнюю копию.</p>
+  <p>Каталог: <code>{{ selected_root }}</code></p>
+  <table class="table">
+    <tr><th>Snapshot</th><th>Путь</th><th>Действия</th></tr>
+    {% for snap in snapshots %}
+    <tr>
+      <td>{{ snap.name }}</td>
+      <td><code>{{ snap }}</code></td>
+      <td><a class="button secondary" href="/restore?root={{ selected_root }}">Восстановить</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3" class="muted">Копии не найдены.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
+

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Задание #{{ job.id }}</h1>
+<section class="panel">
+  <p><strong>Тип:</strong> {{ job.kind }}</p>
+  <p><strong>Статус:</strong> <span class="status-{{ job.status }}">{{ job.status }}</span></p>
+  <p><strong>Комментарий:</strong> {{ job.message }}</p>
+  {% if job.snapshot_path %}<p><strong>Snapshot:</strong> <code>{{ job.snapshot_path }}</code></p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Журнал действий</h2>
+  <div class="log">
+    {% for row in logs %}
+      <div>[{{ row.created_at }}] {{ row.level }}: {{ row.message }}</div>
+    {% else %}
+      <div>Записей журнала пока нет.</div>
+    {% endfor %}
+  </div>
+  {% if job.status == "running" %}
+    <script>setTimeout(() => location.reload(), 2500)</script>
+  {% endif %}
+</section>
+{% endblock %}
+

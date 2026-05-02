@@ -1,0 +1,37 @@
+services:
+  backup-ui:
+    build:
+      context: .
+    image: backup-ui:local
+    container_name: backup-ui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      BACKUP_UI_HOME: /var/lib/backup-ui
+      BACKUP_UI_BACKUP_ROOT: /backups/projects
+      BACKUP_UI_HOST_FS: /host/root
+      BACKUP_UI_HOST_OPT: /host/opt
+      BACKUP_UI_HOST_ETC: /host/etc
+      BACKUP_UI_LOG: /var/log/backup-ui/backup-ui.log
+    volumes:
+      - backup-ui-data:/var/lib/backup-ui
+      - backup-ui-logs:/var/log/backup-ui
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /:/host/root:ro
+      - /opt:/host/opt:ro
+      - /etc:/host/etc:ro
+      - /opt/backups:/backups:rw
+    networks:
+      - backup-ui
+
+networks:
+  backup-ui:
+    name: backup-ui
+
+volumes:
+  backup-ui-data:
+    name: backup-ui-data
+  backup-ui-logs:
+    name: backup-ui-logs

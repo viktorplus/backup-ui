@@ -1,0 +1,12 @@
+.git
+.venv
+data
+__pycache__
+*.pyc
+*.db
+*.log
+*.dump
+*.sql
+*.zst
+*.gz
+server_files

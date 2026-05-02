@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Процессы</h1>
+<p class="help">Список процессов хоста отсортирован по RSS-памяти. Действий над процессами в UI нет.</p>
+
+<form method="get" class="inline-form">
+  <label>Лимит строк</label>
+  <input type="number" name="limit" value="{{ limit }}" min="20" max="1000">
+  <button>Обновить</button>
+</form>
+
+<table class="table gap-top">
+  <tr><th>PID</th><th>PPID</th><th>UID</th><th>Имя</th><th>Состояние</th><th>RSS</th><th>CPU sec</th><th>Команда</th></tr>
+  {% for proc in processes %}
+  <tr>
+    <td>{{ proc.pid }}</td>
+    <td>{{ proc.ppid }}</td>
+    <td>{{ proc.user }}</td>
+    <td>{{ proc.name }}</td>
+    <td>{{ proc.state }}</td>
+    <td>{{ proc.rss }}</td>
+    <td>{{ proc.cpu_seconds }}</td>
+    <td><code class="truncate">{{ proc.cmd }}</code></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="8" class="muted">Процессы не найдены или нет доступа к /proc хоста.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

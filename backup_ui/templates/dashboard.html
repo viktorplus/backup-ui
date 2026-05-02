@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Панель наблюдения</h1>
+<div class="grid">
+  <section class="panel">
+    <h2>Планы backup</h2>
+    <p class="help">Здесь показаны созданные планы. Запуск выполняется вручную кнопкой, расписание отдельно не включается автоматически.</p>
+    <div class="actions"><a class="button" href="/plans/new">Создать план</a></div>
+    <table class="table">
+      <tr><th>План</th><th>Статус</th><th>Действия</th></tr>
+      {% for plan in plans %}
+      <tr>
+        <td>{{ plan.name }}</td>
+        <td>{{ "включен" if plan.enabled else "выключен" }}</td>
+        <td class="actions">
+          <a class="button secondary" href="/plans/{{ plan.id }}/edit">Изменить</a>
+          <form method="post" action="/plans/{{ plan.id }}/run"><button>Запустить</button></form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">Планов пока нет.</td></tr>
+      {% endfor %}
+    </table>
+  </section>
+  <section class="panel">
+    <h2>Последние задания</h2>
+    <table class="table">
+      <tr><th>ID</th><th>Тип</th><th>Статус</th><th>Комментарий</th></tr>
+      {% for job in jobs %}
+      <tr>
+        <td><a href="/jobs/{{ job.id }}">{{ job.id }}</a></td>
+        <td>{{ job.kind }}</td>
+        <td class="status-{{ job.status }}">{{ job.status }}</td>
+        <td>{{ job.message }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">Заданий пока нет.</td></tr>
+      {% endfor %}
+    </table>
+  </section>
+</div>
+{% endblock %}
+

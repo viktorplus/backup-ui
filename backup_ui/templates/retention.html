@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Retention</h1>
+<section class="panel">
+  <p class="help">Сначала запускайте dry-run. Фактическое удаление делает `rm -rf` выбранных snapshot-каталогов внутри указанного root.</p>
+  <form method="post" action="/retention">
+    <div class="row">
+      <div>
+        <label>Backup root</label>
+        <input type="text" name="root" value="{{ root or (plans[0].backup_root if plans else '/opt/backups/projects') }}">
+      </div>
+      <div>
+        <label>Хранить последних N</label>
+        <input type="number" name="keep_last" value="10">
+      </div>
+      <div>
+        <label>Максимальный размер, GB</label>
+        <input type="number" step="0.1" name="max_total_gb" value="0">
+      </div>
+    </div>
+    <label class="check-row"><input type="checkbox" name="dry_run" checked> Dry-run, только показать что будет удалено</label>
+    <button>Рассчитать retention</button>
+  </form>
+</section>
+
+{% if result %}
+<section class="panel">
+  <h2>Результат {{ "dry-run" if dry_run else "удаления" }}</h2>
+  <h3>Останутся</h3>
+  <ul>{% for item in result.keep %}<li>{{ item }}</li>{% endfor %}</ul>
+  <h3>К удалению</h3>
+  <ul>{% for item in result.delete %}<li>{{ item.name }} — {{ item.path }}</li>{% else %}<li>Ничего не удаляется.</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}
+

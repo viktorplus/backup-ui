@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Сервер</h1>
+<p class="help">Read-only сводка текущего состояния сервера. Backup, restore и retention отсюда не запускаются.</p>
+
+<div class="grid">
+  <section class="panel">
+    <h2>Идентификация</h2>
+    <dl class="kv">
+      <dt>Hostname</dt><dd>{{ server.hostname }}</dd>
+      <dt>OS</dt><dd>{{ server.os }}</dd>
+      <dt>IP</dt><dd>{% for ip in server.ips %}<span class="badge">{{ ip }}</span> {% else %}<span class="muted">не найдено</span>{% endfor %}</dd>
+      <dt>Uptime</dt><dd>{{ server.uptime.human }}</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Нагрузка</h2>
+    <dl class="kv">
+      <dt>CPU</dt><dd>{{ server.cpu.cores }} cores, {{ server.cpu.model }}</dd>
+      <dt>Load average</dt><dd>{{ server.load.one }} / {{ server.load.five }} / {{ server.load.fifteen }}</dd>
+      <dt>Процессы</dt><dd>{{ server.process_count }} <a href="/server/processes">посмотреть</a></dd>
+      <dt>Running</dt><dd>{{ server.load.running }}</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Память</h2>
+    <dl class="kv">
+      <dt>Всего</dt><dd>{{ server.memory.total }}</dd>
+      <dt>Использовано</dt><dd>{{ server.memory.used }} ({{ server.memory.used_percent }}%)</dd>
+      <dt>Свободно</dt><dd>{{ server.memory.available }}</dd>
+    </dl>
+  </section>
+</div>
+
+<section class="panel gap-top">
+  <h2>Диски</h2>
+  <table class="table">
+    <tr><th>Точка</th><th>Путь</th><th>Всего</th><th>Занято</th><th>Свободно</th><th>%</th></tr>
+    {% for disk in server.disks %}
+    <tr>
+      <td>{{ disk.mount }}</td>
+      <td><code>{{ disk.path }}</code></td>
+      <td>{{ disk.total }}</td>
+      <td>{{ disk.used }}</td>
+      <td>{{ disk.free }}</td>
+      <td>{{ disk.used_percent }}{% if disk.total != "-" %}%{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel gap-top">
+  <h2>Процессы по памяти</h2>
+  <table class="table">
+    <tr><th>PID</th><th>Имя</th><th>RSS</th><th>CPU sec</th><th>Команда</th></tr>
+    {% for proc in server.top_processes %}
+    <tr>
+      <td>{{ proc.pid }}</td>
+      <td>{{ proc.name }}</td>
+      <td>{{ proc.rss }}</td>
+      <td>{{ proc.cpu_seconds }}</td>
+      <td><code class="truncate">{{ proc.cmd }}</code></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

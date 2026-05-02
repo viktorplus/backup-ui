@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ "Изменить план" if plan else "Создать план" }}</h1>
+<form method="post" action="{{ '/plans/' ~ plan.id if plan else '/plans' }}">
+  <section class="panel">
+    <h2>Основное</h2>
+    <div class="row">
+      <div>
+        <label>Название</label>
+        <input type="text" name="name" value="{{ plan.name if plan else 'Project backup' }}">
+      </div>
+      <div>
+        <label>Каталог локальных snapshot</label>
+        <input type="text" name="backup_root" value="{{ plan.backup_root if plan else default_root }}">
+      </div>
+      <div>
+        <label>Расписание текстом</label>
+        <input type="text" name="schedule" value="{{ plan.schedule if plan else '' }}" placeholder="например: daily 03:30">
+      </div>
+    </div>
+    <label class="check-row"><input type="checkbox" name="enabled" {% if plan and plan.enabled %}checked{% endif %}> План включен логически</label>
+    <p class="help">Флажок только сохраняет намерение. Systemd timer не включается автоматически.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Проекты</h2>
+    {% for p in data["projects"] %}
+      <div class="check-row">
+        <input type="checkbox" name="project_enabled" value="{{ loop.index0 }}" {% if p.recommended %}checked{% endif %}>
+        <span><strong>{{ p.name }}</strong> <code>{{ p.path }}</code> <span class="muted">{{ p.comment }}</span></span>
+      </div>
+      <input type="hidden" name="project_name" value="{{ p.name }}">
+      <input type="hidden" name="project_path" value="{{ p.path }}">
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Базы PostgreSQL</h2>
+    <label>Пользователь PostgreSQL</label>
+    <input type="text" name="postgres_user" value="signal">
+    {% for db in data["databases"] %}
+      <div class="check-row">
+        <input type="checkbox" name="db_enabled" value="{{ loop.index0 }}" {% if db.recommended %}checked{% endif %}>
+        <span><strong>{{ db.name }}</strong> {{ db.size_human }} в {{ db.container }} — {{ db.comment }}</span>
+        <label class="check-row"><input type="checkbox" name="db_skip" value="{{ loop.index0 }}" {% if not db.recommended %}checked{% endif %}> пропустить</label>
+      </div>
+      <input type="hidden" name="db_name" value="{{ db.name }}">
+      <input type="hidden" name="db_container" value="{{ db.container }}">
+    {% else %}
+      <p class="muted">Базы не найдены.</p>
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Конфигурационные файлы</h2>
+    {% for cfg in data["configs"] %}
+      <div class="check-row">
+        <input type="checkbox" name="config_enabled" value="{{ loop.index0 }}" {% if cfg.recommended %}checked{% endif %}>
+        <span><strong>{{ cfg.name }}</strong> <code>{{ cfg.path }}</code></span>
+      </div>
+      <input type="hidden" name="config_name" value="{{ cfg.name }}">
+      <input type="hidden" name="config_path" value="{{ cfg.path }}">
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Хранилища</h2>
+    <label class="check-row"><input type="checkbox" name="storage_local_enabled" checked> Локальное хранилище</label>
+    <input type="text" name="storage_local_path" value="{{ plan.storage[0].path if plan and plan.storage else default_root }}">
+    <label class="check-row"><input type="checkbox" name="storage_ssh_enabled"> SSH/rsync хранилище</label>
+    <div class="row">
+      <div><label>SSH remote</label><input type="text" name="storage_ssh_remote" placeholder="backup@example.com"></div>
+      <div><label>Путь на удаленном сервере</label><input type="text" name="storage_ssh_path" placeholder="/data/backups/server1"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Retention</h2>
+    <div class="row">
+      <div><label>Хранить последних N копий</label><input type="number" name="keep_last" value="{{ plan.retention.keep_last if plan else 10 }}"></div>
+      <div><label>Максимальный размер, GB</label><input type="number" step="0.1" name="max_total_gb" value="{{ plan.retention.max_total_gb if plan else 0 }}"></div>
+    </div>
+    <p class="help">Удаление выполняется только через экран Retention, желательно сначала dry-run.</p>
+  </section>
+
+  <div class="actions"><button>Сохранить план</button><a class="button secondary" href="/plans">Отмена</a></div>
+</form>
+{% endblock %}

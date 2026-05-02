@@ -1,0 +1,19 @@
+[Unit]
+Description=Backup UI
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+Environment=BACKUP_UI_HOME=/var/lib/backup-ui
+Environment=BACKUP_UI_BACKUP_ROOT=/opt/backups/projects
+WorkingDirectory=/opt/backup-ui
+ExecStart=/opt/backup-ui/.venv/bin/uvicorn backup_ui.app:app --host 127.0.0.1 --port 8090
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

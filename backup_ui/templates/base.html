@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Backup UI" }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">Backup UI</div>
+      <nav>
+        <a href="/">Панель</a>
+        <a href="/server">Сервер</a>
+        <a href="/server/processes">Процессы</a>
+        <a href="/server/files?path=/">Файлы</a>
+        <a href="/databases">Базы</a>
+        <a href="/profiles/current">Профиль</a>
+        <a href="/discovery">Анализ</a>
+        <a href="/plans">Планы</a>
+        <a href="/backups">Копии</a>
+        <a href="/restore">Восстановление</a>
+        <a href="/retention">Retention</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

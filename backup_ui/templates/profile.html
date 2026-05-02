@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Профиль сервера</h1>
+<p class="help">Автоматически собранный профиль можно сохранить во внешней документации для инвентаризации серверов.</p>
+
+<section class="panel">
+  <dl class="kv">
+    <dt>Имя</dt><dd>{{ profile.name }}</dd>
+    <dt>Hostname</dt><dd>{{ profile.hostname }}</dd>
+    <dt>IP</dt><dd>{% for ip in profile.ips %}<span class="badge">{{ ip }}</span> {% endfor %}</dd>
+    <dt>OS</dt><dd>{{ profile.os }}</dd>
+    <dt>CPU</dt><dd>{{ profile.cpu.cores }} cores, {{ profile.cpu.model }}</dd>
+    <dt>RAM</dt><dd>{{ profile.memory.total }}, свободно {{ profile.memory.available }}</dd>
+    <dt>Disk free</dt><dd>{{ profile.disk_free }}</dd>
+    <dt>DB containers</dt><dd>{{ profile.database_containers | length }}</dd>
+    <dt>Комментарий</dt><dd>{{ profile.notes }}</dd>
+  </dl>
+  <form method="post" action="/profiles/current/save" class="actions gap-top">
+    <button>Сохранить/обновить профиль этого сервера</button>
+  </form>
+</section>
+
+<section class="panel gap-top">
+  <h2>Сохраненные профили</h2>
+  <table class="table">
+    <tr><th>Имя</th><th>Hostname</th><th>IP</th><th>Обновлен</th></tr>
+    {% for item in saved_profiles %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>{{ item.hostname }}</td>
+      <td>{% for ip in item.profile.ips %}<span class="badge">{{ ip }}</span> {% endfor %}</td>
+      <td>{{ item.updated_at }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">Сохраненных профилей пока нет.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
