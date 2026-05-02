@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import tarfile
@@ -103,13 +104,29 @@ def _dump_database(job_id: int, snapshot: Path, db: dict[str, Any]) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     dump_path = dest / f"{safe}.dump"
     container = db["container"]
+    engine = db.get("engine", "postgres")
     user = db.get("user") or "signal"
 
     _write_restore_note(dest / "RESTORE.md", safe, "database")
     _log(job_id, f"Создаю dump базы {db['name']} из контейнера {container}")
+    if engine == "mysql":
+        dump_path = dest / f"{safe}.sql"
+        database_arg = shlex.quote(db["name"])
+        command = (
+            'user="${MYSQL_USER:-root}"; '
+            'password="${MYSQL_PASSWORD:-${MYSQL_ROOT_PASSWORD:-}}"; '
+            'if [ -n "$password" ]; then '
+            f'mysqldump --single-transaction --routines --triggers -u"$user" -p"$password" {database_arg}; '
+            'else '
+            f'mysqldump --single-transaction --routines --triggers -u"$user" {database_arg}; '
+            'fi'
+        )
+        args = ["docker", "exec", container, "sh", "-lc", command]
+    else:
+        args = ["docker", "exec", container, "pg_dump", "-U", user, "-d", db["name"], "-Fc", "-Z6"]
     with dump_path.open("wb") as fh:
         proc = subprocess.run(
-            ["docker", "exec", container, "pg_dump", "-U", user, "-d", db["name"], "-Fc", "-Z6"],
+            args,
             stdout=fh,
             stderr=subprocess.PIPE,
             check=False,
@@ -135,6 +152,12 @@ tar -xzf files.tar.gz -C /tmp/restore-check
 
 ```bash
 docker exec -i CONTAINER pg_restore -U USER -d DB --clean --if-exists < DB.dump
+```
+
+База MySQL/MariaDB, если рядом есть `.sql`:
+
+```bash
+docker exec -i CONTAINER mysql -u USER -p DB < DB.sql
 ```
 
 Автоматическое восстановление через UI требует подтверждения словом `ВОССТАНОВИТЬ`.
@@ -164,4 +187,3 @@ def _safe_name(name: str) -> str:
 def delete_snapshot(path: Path) -> None:
     if path.exists() and path.is_dir():
         shutil.rmtree(path)
-

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 from typing import Any
 
 from .commands import run
@@ -16,6 +17,10 @@ CONFIG_CANDIDATES = [
     "nginx",
     "caddy",
 ]
+
+POSTGRES_MARKERS = ("postgres", "postgis")
+MYSQL_MARKERS = ("mysql", "mariadb")
+MYSQL_SYSTEM_DATABASES = {"information_schema", "mysql", "performance_schema", "sys"}
 
 
 def _docker_json(format_expr: str, command: list[str]) -> list[dict[str, Any]]:
@@ -82,52 +87,116 @@ def discover_projects() -> list[dict[str, Any]]:
     return sorted(projects.values(), key=lambda x: x["name"])
 
 
-def discover_postgres() -> list[dict[str, Any]]:
+def discover_databases() -> list[dict[str, Any]]:
     containers = discover_docker_containers()
-    pg_containers = [
-        row.get("Names")
-        for row in containers
-        if "postgres" in (row.get("Image", "") + " " + row.get("Names", "")).lower()
-    ]
     databases: list[dict[str, Any]] = []
 
-    for container in pg_containers:
+    for row in containers:
+        container = row.get("Names")
         if not container:
             continue
-        cmd = [
-            "docker",
-            "exec",
-            container,
-            "sh",
-            "-lc",
-            "psql -U ${POSTGRES_USER:-postgres} -d postgres -At -c "
-            "\"select datname || '|' || pg_database_size(datname) "
-            "from pg_database where datistemplate=false order by datname\"",
-        ]
-        result = run(cmd, timeout=30)
-        if result.code != 0:
-            continue
-        for line in result.stdout.splitlines():
-            if "|" not in line:
-                continue
-            name, size = line.split("|", 1)
-            try:
-                size_bytes = int(size)
-            except ValueError:
-                size_bytes = 0
-            databases.append(
-                {
-                    "container": container,
-                    "name": name,
-                    "size_bytes": size_bytes,
-                    "size_human": human_size(size_bytes),
-                    "recommended": size_bytes < 2 * 1024 * 1024 * 1024,
-                    "comment": "Большие базы лучше включать отдельным планом"
-                    if size_bytes >= 2 * 1024 * 1024 * 1024
-                    else "Можно включить в обычный проектный backup",
-                }
-            )
+        text = (row.get("Image", "") + " " + row.get("Names", "")).lower()
+        if any(marker in text for marker in POSTGRES_MARKERS):
+            databases.extend(_discover_postgres_databases(container))
+        elif any(marker in text for marker in MYSQL_MARKERS):
+            databases.extend(_discover_mysql_databases(container))
     return databases
+
+
+def discover_postgres() -> list[dict[str, Any]]:
+    return [db for db in discover_databases() if db["engine"] == "postgres"]
+
+
+def _discover_postgres_databases(container: str) -> list[dict[str, Any]]:
+    databases: list[dict[str, Any]] = []
+    cmd = [
+        "docker",
+        "exec",
+        container,
+        "sh",
+        "-lc",
+        "psql -U ${POSTGRES_USER:-postgres} -d postgres -At -c "
+        "\"select datname || '|' || pg_database_size(datname) "
+        "from pg_database where datistemplate=false order by datname\"",
+    ]
+    result = run(cmd, timeout=30)
+    if result.code != 0:
+        return [
+            {
+                "engine": "postgres",
+                "container": container,
+                "name": "ошибка доступа",
+                "size_bytes": 0,
+                "size_human": "-",
+                "recommended": False,
+                "comment": "PostgreSQL найден, но список баз недоступен без корректных учетных данных",
+            }
+        ]
+    for line in result.stdout.splitlines():
+        if "|" not in line:
+            continue
+        name, size = line.split("|", 1)
+        size_bytes = _int(size)
+        databases.append(_database_row("postgres", container, name, size_bytes))
+    return databases
+
+
+def _discover_mysql_databases(container: str) -> list[dict[str, Any]]:
+    query = """
+select s.schema_name,
+       coalesce(sum(t.data_length + t.index_length), 0)
+  from information_schema.schemata s
+  left join information_schema.tables t on t.table_schema = s.schema_name
+ group by s.schema_name
+ order by s.schema_name
+""".strip()
+    command = (
+        'user="${MYSQL_USER:-root}"; '
+        'password="${MYSQL_PASSWORD:-${MYSQL_ROOT_PASSWORD:-}}"; '
+        'if [ -n "$password" ]; then '
+        f'mysql -N -B -u"$user" -p"$password" -e {shlex.quote(query)}; '
+        'else '
+        f'mysql -N -B -u"$user" -e {shlex.quote(query)}; '
+        'fi'
+    )
+    result = run(["docker", "exec", container, "sh", "-lc", command], timeout=30)
+    if result.code != 0:
+        return [
+            {
+                "engine": "mysql",
+                "container": container,
+                "name": "ошибка доступа",
+                "size_bytes": 0,
+                "size_human": "-",
+                "recommended": False,
+                "comment": "MySQL/MariaDB найден, но список баз недоступен без корректных учетных данных",
+            }
+        ]
+    databases: list[dict[str, Any]] = []
+    for line in result.stdout.splitlines():
+        parts = line.split("\t")
+        if not parts or not parts[0].strip():
+            continue
+        if parts[0] in MYSQL_SYSTEM_DATABASES:
+            continue
+        size_bytes = _int(parts[1]) if len(parts) > 1 else 0
+        databases.append(_database_row("mysql", container, parts[0], size_bytes))
+    return databases
+
+
+def _database_row(engine: str, container: str, name: str, size_bytes: int) -> dict[str, Any]:
+    large = size_bytes >= 2 * 1024 * 1024 * 1024
+    return {
+        "engine": engine,
+        "container": container,
+        "name": name,
+        "size_bytes": size_bytes,
+        "size_human": human_size(size_bytes),
+        "recommended": not large,
+        "comment": "Большие базы лучше включать отдельным планом"
+        if large
+        else "Можно включить в обычный проектный backup",
+    }
 
 
 def discover_configs() -> list[dict[str, Any]]:
@@ -179,7 +248,7 @@ def discover_storage() -> dict[str, Any]:
 def discover_all() -> dict[str, Any]:
     return {
         "projects": discover_projects(),
-        "databases": discover_postgres(),
+        "databases": discover_databases(),
         "configs": discover_configs(),
         "storage": discover_storage(),
     }
@@ -192,3 +261,10 @@ def human_size(size: int) -> str:
             return f"{value:.1f}{unit}"
         value /= 1024
     return f"{size}B"
+
+
+def _int(value: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0

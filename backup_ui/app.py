@@ -267,14 +267,17 @@ def _plan_from_form(form) -> dict:
 
     db_names = form.getlist("db_name")
     db_containers = form.getlist("db_container")
+    db_engines = form.getlist("db_engine")
     db_enabled = set(form.getlist("db_enabled"))
     db_skip = set(form.getlist("db_skip"))
     for idx, name in enumerate(db_names):
         if str(idx) in db_enabled:
+            engine = db_engines[idx] if idx < len(db_engines) else "postgres"
             databases.append(
                 {
                     "name": name,
                     "container": db_containers[idx],
+                    "engine": engine,
                     "user": form.get("postgres_user") or "signal",
                     "skip": str(idx) in db_skip,
                 }

@@ -9,6 +9,7 @@ from .discovery import discover_docker_containers, human_size
 
 POSTGRES_MARKERS = ("postgres", "postgis")
 MYSQL_MARKERS = ("mysql", "mariadb")
+MYSQL_SYSTEM_DATABASES = {"information_schema", "mysql", "performance_schema", "sys"}
 
 
 def discover_database_containers() -> list[dict[str, Any]]:
@@ -121,6 +122,8 @@ select s.schema_name,
     for line in result.stdout.splitlines():
         parts = line.split("\t")
         if not parts or not parts[0].strip():
+            continue
+        if parts[0] in MYSQL_SYSTEM_DATABASES:
             continue
         size = _int(parts[1]) if len(parts) > 1 else 0
         rows.append({"name": parts[0], "size": human_size(size), "size_bytes": size, "error": ""})

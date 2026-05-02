@@ -35,17 +35,18 @@
   </section>
 
   <section class="panel">
-    <h2>Базы PostgreSQL</h2>
-    <label>Пользователь PostgreSQL</label>
+    <h2>Базы данных</h2>
+    <label>Пользователь PostgreSQL по умолчанию</label>
     <input type="text" name="postgres_user" value="signal">
     {% for db in data["databases"] %}
       <div class="check-row">
         <input type="checkbox" name="db_enabled" value="{{ loop.index0 }}" {% if db.recommended %}checked{% endif %}>
-        <span><strong>{{ db.name }}</strong> {{ db.size_human }} в {{ db.container }} — {{ db.comment }}</span>
+        <span><strong>{{ db.name }}</strong> {{ db.size_human }} в {{ db.container }} ({{ db.engine }}) — {{ db.comment }}</span>
         <label class="check-row"><input type="checkbox" name="db_skip" value="{{ loop.index0 }}" {% if not db.recommended %}checked{% endif %}> пропустить</label>
       </div>
       <input type="hidden" name="db_name" value="{{ db.name }}">
       <input type="hidden" name="db_container" value="{{ db.container }}">
+      <input type="hidden" name="db_engine" value="{{ db.engine }}">
     {% else %}
       <p class="muted">Базы не найдены.</p>
     {% endfor %}

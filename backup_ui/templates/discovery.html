@@ -20,11 +20,12 @@
 </section>
 
 <section class="panel">
-  <h2>Базы PostgreSQL</h2>
+  <h2>Базы данных</h2>
   <table class="table">
-    <tr><th>Контейнер</th><th>База</th><th>Размер</th><th>Рекомендация</th><th>Комментарий</th></tr>
+    <tr><th>Тип</th><th>Контейнер</th><th>База</th><th>Размер</th><th>Рекомендация</th><th>Комментарий</th></tr>
     {% for db in data["databases"] %}
     <tr>
+      <td>{{ db.engine }}</td>
       <td>{{ db.container }}</td>
       <td>{{ db.name }}</td>
       <td>{{ db.size_human }}</td>
@@ -32,7 +33,7 @@
       <td>{{ db.comment }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="muted">PostgreSQL базы не найдены или нет доступа к контейнеру.</td></tr>
+    <tr><td colspan="6" class="muted">Базы данных не найдены или нет доступа к контейнеру.</td></tr>
     {% endfor %}
   </table>
 </section>

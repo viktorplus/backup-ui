@@ -26,7 +26,7 @@ def server_overview() -> dict[str, Any]:
     ]
     processes = list_processes(limit=1_000_000)
     return {
-        "hostname": _read_first(HOST_FS / "etc" / "hostname") or _read_first(Path("/etc/hostname")) or "unknown",
+        "hostname": _host_name(),
         "os": _os_release(),
         "ips": _local_ips(),
         "cpu": _cpuinfo(),
@@ -198,6 +198,26 @@ def _disk_row(label: str, path: Path) -> dict[str, Any]:
 def _os_release() -> str:
     data = _parse_key_value(HOST_FS / "etc" / "os-release")
     return data.get("PRETTY_NAME", data.get("NAME", "unknown")).strip('"')
+
+
+def _host_name() -> str:
+    short_name = _read_first(HOST_FS / "etc" / "hostname") or _read_first(Path("/etc/hostname"))
+    hosts = HOST_FS / "etc" / "hosts"
+    if short_name and hosts.exists():
+        try:
+            for raw in hosts.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = raw.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                parts = line.split()
+                names = parts[1:]
+                if short_name in names:
+                    for name in names:
+                        if "." in name and name not in {"localhost.localdomain"}:
+                            return name
+        except OSError:
+            pass
+    return short_name or "unknown"
 
 
 def _local_ips() -> list[str]:
