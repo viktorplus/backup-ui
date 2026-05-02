@@ -227,6 +227,12 @@ def _configured_ips() -> list[str]:
     for root in [HOST_FS / "etc" / "netplan", HOST_FS / "etc" / "systemd" / "network"]:
         if root.exists():
             candidates.extend(path for path in root.rglob("*") if path.is_file())
+    interfaces = HOST_FS / "etc" / "network" / "interfaces"
+    if interfaces.exists():
+        candidates.append(interfaces)
+    interfaces_d = HOST_FS / "etc" / "network" / "interfaces.d"
+    if interfaces_d.exists():
+        candidates.extend(path for path in interfaces_d.rglob("*") if path.is_file())
 
     for path in candidates:
         try:
@@ -234,6 +240,14 @@ def _configured_ips() -> list[str]:
         except OSError:
             continue
         for match in re.finditer(r"(?<![\w:])([0-9a-fA-F:.]+)/(?:\d{1,3})(?![\w:])", text):
+            raw = match.group(1)
+            try:
+                ip = str(ipaddress.ip_address(raw))
+            except ValueError:
+                continue
+            if ip not in ips and not ip.startswith("127."):
+                ips.append(ip)
+        for match in re.finditer(r"^\s*address\s+([0-9a-fA-F:.]+)\s*$", text, flags=re.MULTILINE):
             raw = match.group(1)
             try:
                 ip = str(ipaddress.ip_address(raw))

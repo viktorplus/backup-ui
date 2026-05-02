@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 from typing import Any
 
 from .commands import run
-from .settings import HOST_ETC, HOST_OPT
+from .settings import DEFAULT_BACKUP_ROOT, HOST_ETC, HOST_FS, HOST_OPT
 
 
 CONFIG_CANDIDATES = [
@@ -157,15 +156,20 @@ def discover_configs() -> list[dict[str, Any]]:
 
 
 def discover_storage() -> dict[str, Any]:
-    roots = ["/opt/backups", "/var/backups"]
+    roots = [
+        (str(DEFAULT_BACKUP_ROOT), DEFAULT_BACKUP_ROOT),
+        ("/opt/backups", HOST_OPT / "backups"),
+        ("/var/backups", HOST_FS / "var" / "backups"),
+    ]
     return {
         "local_roots": [
             {
-                "path": root,
-                "exists": Path(root).exists(),
-                "writable": os.access(root, os.W_OK) if Path(root).exists() else False,
+                "path": display,
+                "actual_path": str(actual),
+                "exists": actual.exists(),
+                "writable": os.access(actual, os.W_OK) if actual.exists() else False,
             }
-            for root in roots
+            for display, actual in roots
         ],
         "ssh_available": run(["sh", "-lc", "command -v ssh >/dev/null 2>&1"], timeout=5).code == 0,
         "rsync_available": run(["sh", "-lc", "command -v rsync >/dev/null 2>&1"], timeout=5).code == 0,
